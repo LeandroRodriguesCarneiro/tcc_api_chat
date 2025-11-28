@@ -1,0 +1,293 @@
+version: "3.8"
+
+services:
+  api_autenticacao:
+    image: leandrorodriguescarneiro/tcc_api_autenticacao:latest
+    container_name: api_autenticacao
+    ports:
+      - "8000:8000"
+    environment:
+      SECRET_KEY: "_XOC-izydwVUdAg-QNN49NNiZtzD7mRzdUOepNzTtJEtwlikBdiWPT96nJQ8IqPBUh1X6P13GN3hE-sRUa1VIQ"
+      ALGORITHM: "HS256"
+      DB_HOST: postgres_tcc
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PSW: postgres
+      DB_DATABASE: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/v1/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      postgres_tcc:
+        condition: service_healthy
+    networks:
+      - test_net
+
+  api_ingestao_dados:
+    image: leandrorodriguescarneiro/tcc_api_ingestao_dados:latest
+    container_name: api_ingestao_dados
+    ports:
+      - "8002:8000"
+    environment:
+      DB_HOST: postgres_tcc
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PSW: postgres
+      DB_DATABASE: postgres
+      KAFKA_BOOTSTRAP_SERVERS: kafka_tcc:9092
+      URL_API_AUTH: http://api_autenticacao:8000
+    volumes:
+      - ./tmp:/app/tmp
+    depends_on:
+      postgres_tcc:
+        condition: service_healthy
+      api_autenticacao:
+        condition: service_healthy
+      kafka_tcc:
+        condition: service_healthy
+    networks:
+      - test_net
+
+  api_chat:
+    build: .
+    container_name: api_chat
+    ports:
+      - "8003:8000"
+    environment:
+      DB_HOST: postgres_tcc
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PSW: postgres
+      DB_DATABASE: postgres
+      KAFKA_BOOTSTRAP_SERVERS: kafka_tcc:9092
+      URL_API_AUTH: http://api_autenticacao:8000
+      DB_VECTOR_HOST: chromadb
+      DB_VECTOR_PORT: 8000
+      LLM_KEY: eCdfJ6C5VIGQEIj3WCQnNShJXiKcseSSjyiAIxtm
+    env_file:
+      - .env.chroma
+    depends_on:
+      postgres_tcc:
+        condition: service_healthy
+      api_autenticacao:
+        condition: service_healthy
+      kafka_tcc:
+        condition: service_healthy
+    networks:
+      - test_net
+
+  topic-init:
+    image: leandrorodriguescarneiro/tcc_api_ingestao_dados:latest
+    container_name: topic-init
+    command: ["python", "-m", "app.kafka.init_topics"]
+    depends_on:
+      kafka_tcc:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres_tcc
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PSW: postgres
+      DB_DATABASE: postgres
+      KAFKA_BOOTSTRAP_SERVERS: kafka_tcc:9092
+      URL_API_AUTH: http://api_autenticacao:8000
+    restart: "no"
+    networks:
+      - test_net
+
+  pdf_splitter_worker:
+    image: leandrorodriguescarneiro/tcc_api_ingestao_dados:latest
+    container_name: pdf_splitter_worker
+    command: ["python", "-m", "app.kafka.start_consumer", "pdf_worker"]
+    depends_on:
+      topic-init:
+        condition: service_completed_successfully
+      kafka_tcc:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres_tcc
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PSW: postgres
+      DB_DATABASE: postgres
+      KAFKA_BOOTSTRAP_SERVERS: kafka_tcc:9092
+      URL_API_AUTH: http://api_autenticacao:8000
+    volumes:
+      - ./tmp:/app/tmp
+    networks:
+      - test_net
+
+  docx_splitter_worker:
+    image: leandrorodriguescarneiro/tcc_api_ingestao_dados:latest
+    container_name: docx_splitter_worker
+    command: ["python", "-m", "app.kafka.start_consumer", "docx_worker"]
+    depends_on:
+      topic-init:
+        condition: service_completed_successfully
+      kafka_tcc:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres_tcc
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PSW: postgres
+      DB_DATABASE: postgres
+      KAFKA_BOOTSTRAP_SERVERS: kafka_tcc:9092
+      URL_API_AUTH: http://api_autenticacao:8000
+    volumes:
+      - ./tmp:/app/tmp
+    networks:
+      - test_net
+
+  document_spliter_worker:
+    image: leandrorodriguescarneiro/tcc_api_ingestao_dados:latest
+    container_name: document_spliter_worker
+    command: ["python", "-m", "app.kafka.start_consumer", "document_spliter"]
+    depends_on:
+      topic-init:
+        condition: service_completed_successfully
+      kafka_tcc:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres_tcc
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PSW: postgres
+      DB_DATABASE: postgres
+      KAFKA_BOOTSTRAP_SERVERS: kafka_tcc:9092
+      URL_API_AUTH: http://api_autenticacao:8000
+    volumes:
+      - ./tmp:/app/tmp
+    networks:
+      - test_net
+
+  index_worker:
+    image: leandrorodriguescarneiro/tcc_api_ingestao_dados:latest
+    container_name: index_worker
+    command: ["python", "-m", "app.kafka.start_consumer", "index_worker"]
+    depends_on:
+      topic-init:
+        condition: service_completed_successfully
+      kafka_tcc:
+        condition: service_healthy
+    environment:
+        DB_HOST: postgres_tcc
+        DB_PORT: 5432
+        DB_USER: postgres
+        DB_PSW: postgres
+        DB_DATABASE: postgres
+        KAFKA_BOOTSTRAP_SERVERS: kafka_tcc:9092
+        URL_API_AUTH: http://api_autenticacao:8000
+        DB_VECTOR_HOST: chromadb
+        DB_VECTOR_PORT: 8000
+    env_file:
+      - .env.chroma
+    volumes:
+      - ./tmp:/app/tmp
+    networks:
+      - test_net
+
+  delete_index_worker:
+    image: leandrorodriguescarneiro/tcc_api_ingestao_dados:latest
+    container_name: delete_index_worker
+    command: ["python", "-m", "app.kafka.start_consumer", "delete_worker"]
+    depends_on:
+      topic-init:
+        condition: service_completed_successfully
+      kafka_tcc:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres_tcc
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PSW: postgres
+      DB_DATABASE: postgres
+      KAFKA_BOOTSTRAP_SERVERS: kafka_tcc:9092
+      URL_API_AUTH: http://api_autenticacao:8000
+      DB_VECTOR_HOST: chromadb
+      DB_VECTOR_PORT: 8000
+    env_file:
+      - .env.chroma
+    networks:
+      - test_net
+
+  chromadb:
+    image: chromadb/chroma
+    container_name: chromadb
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./chroma_data:/chroma/chroma
+    env_file:
+      - .env.chroma
+    networks:
+      - test_net
+
+  postgres_tcc:
+    image: postgres:16
+    container_name: postgres_tcc
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: on-failure
+    networks:
+      - test_net
+
+  zookeeper_tcc:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper_tcc
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper
+    networks:
+      - test_net
+
+  kafka_tcc:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka_tcc
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper_tcc:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka_tcc:9092,PLAINTEXT_INTERNAL://kafka_tcc:29092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_INTERNAL://0.0.0.0:29092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_MESSAGE_MAX_BYTES: 10485760
+      KAFKA_REPLICA_FETCH_MAX_BYTES: 10485760
+      KAFKA_MAX_REQUEST_SIZE: 10485760
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    depends_on:
+      - zookeeper_tcc
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server kafka_tcc:9092 --list || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    networks:
+      - test_net
+
+volumes:
+  zookeeper_data:
+  kafka_data:
+
+networks:
+  test_net:
