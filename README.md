@@ -4,7 +4,7 @@ A API responsável por receber perguntas dos usuários, consultar o banco vetori
 
 ## Tecnologias Utilizadas
 
-- **Python + FastAPI ** desenvolvimento leve e eficiente de APIs REST.
+- **Python + FastAPI** desenvolvimento leve e eficiente de APIs REST.
 - **Cohere** LLM utilizada para gerar respostas contextualizadas.
 - **ChromaDB** banco vetorial que armazena embeddings usados para recuperar contexto relevante.
 - **PostgreSQL** armazenamento de históricos de chat e metadados de conversações.
