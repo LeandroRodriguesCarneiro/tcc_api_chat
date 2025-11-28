@@ -1,14 +1,15 @@
 # tcc_api_chat
 
-Esta API gerencia operações de inserção de documentos na base vetorial do projeto, integrando-se com a API de autenticação para garantir que apenas usuários autorizados possam adicionar dados. Também inicia e monitora pipelines Kafka, fornecendo identificadores e atualizando o status de cada documento enviado. A arquitetura foi pensada para lidar com múltiplos tipos de arquivo, como PDF, DOCX, TXT, HTML e Markdown, direcionando tarefas conforme sua complexidade.
+A API responsável por receber perguntas dos usuários, consultar o banco vetorial (ChromaDB) e retornar respostas contextualizadas utilizando a LLM. Diferente das APIs de ingestão e autenticação, esta API não processa documentos, não realiza ingestão e não gerencia pipelines Kafka. Seu foco é exclusivamente fornecer uma interface rápida, segura e escalável para interação com o chatbot do projeto.
 
 ## Tecnologias Utilizadas
 
-- **Python** com o framework **FastAPI** para desenvolvimento rápido e eficiente da API REST.
-- **Cohere** como a llm principal do chatbot.
-- **PostgreSQL** como banco de dados relacional para armazenamento seguro e consistente dos status dos documentos.
-- **Docker** para containerização, garantindo ambientes controlados e consistentes para desenvolvimento, teste e produção.
-- **Docker Compose** Para gerenciar e integrar tudo para as fazes de desenvolvimento.
+- **Python + FastAPI ** desenvolvimento leve e eficiente de APIs REST.
+- **Cohere** LLM utilizada para gerar respostas contextualizadas.
+- **ChromaDB** banco vetorial que armazena embeddings usados para recuperar contexto relevante.
+- **PostgreSQL** armazenamento de históricos de chat e metadados de conversações.
+- **Docker & Docker Compose** containerização e orquestração dos serviços.
+- **Autenticação via API externa** integração com a API de autenticação do projeto.
 
 ## Como Utilizar
 -   OBS: precisa ter clonado e fazer build da imagem da API de autenticação antes de seguir: https://github.com/LeandroRodriguesCarneiro/tcc_api_autenticacao
@@ -91,22 +92,30 @@ Esta API gerencia operações de inserção de documentos na base vetorial do pr
   6. Acesse a documentação interativa da API (Swagger UI) navegando para `http://localhost:8000/docs`.
 
 ## Principais Funcionalidades
-- Autenticação e autorização integrada.
-- Envio de documentos de diversos formatos para a base vetorial.
-- Recebimento de ID único para cada documento e consulta ao status do processamento.
-- Pipeline escalável via Kafka, direcionando tarefas a workers especializados conforme o tipo de arquivo.
+- O usuário envia uma pergunta à API.
+- A API verifica o token de autenticação com a API externa.
+- A pergunta é transformada em embedding.
+- O embedding é usado para buscar contexto no ChromaDB.
+- A API envia pergunta + contexto para a LLM (Cohere).
+- A resposta é retornada ao usuário.
 
-## Importância para o Projeto
-
-Garante alta disponibilidade, escalabilidade e controle dos dados processados por IA. Sem autenticação e orquestração apropriada, o sistema estaria vulnerável, não garantindo conformidade nem governança dos documentos tratados.
+## Importância no Projeto
+A tcc_api_chat é o ponto de entrada para que usuários interajam com o sistema de IA.
+- centraliza o fluxo de perguntas e respostas;
+- une autenticação, histórico e contexto vetorial;
+- garante respostas consistentes, alinhadas ao domínio e atualizadas com o banco vetorial;
+- oferece uma interface unificada para integrações externas (website, chatbot corporativo, etc.).
+- Sem ela, o projeto não teria um ponto de consumo confiável para o conteúdo ingerido na base vetorial.
 
 ## Desenvolvimento Futuro
 
-Monitoramento avançado das pipelines.
+Armazenar métricas de uso das conversas
 
-Suporte a autenticação via OAuth/OpenID Connect.
+Suporte a modelos adicionais (Gemini, GPT, Mistral)
 
-Logging e rastreamento detalhados para auditoria.
+Modo de resposta alternativo (somente contexto, sem LLM)
+
+Filtros de segurança baseados em políticas da empresa
 
 ## Contatos e Contribuições
 
