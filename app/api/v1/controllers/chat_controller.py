@@ -19,12 +19,10 @@ database = Database.get_instance()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
-
 class ChatMessage(BaseModel):
     role: str
     content: str
     timestamp: Optional[datetime] = None
-
 
 class ChatController:
     def __init__(self):
