@@ -32,12 +32,15 @@ class ChatController:
         self.router.add_api_route("/history", self.get_user_history, methods=["GET"])
         self.router.add_api_route("/history/{conversation_id}", self.get_conversation_history, methods=["GET"])
 
-    def validate_token(self, token: str):
-        if not token:
+    def validate_token(self, access_token: str):
+        if not access_token:
             raise HTTPException(status_code=401, detail="Usuário não autenticado")
 
         security = SecurityService()
-        security.validate_access_token(token)
+        try:
+            security.validate_access_token(access_token)
+        except Exception:
+            raise HTTPException(status_code=401, detail="Token inválido ou expirado")
 
     async def send_message(
         self,
