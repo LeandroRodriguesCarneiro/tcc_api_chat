@@ -8,7 +8,7 @@ indec_document_controller= ChatController()
 
 router.include_router(
     indec_document_controller.router,
-    prefix='/Auth',
+    prefix='/Chat',
     tags=['V1', 'Chat']
     )
 
