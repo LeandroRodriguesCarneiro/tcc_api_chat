@@ -26,7 +26,7 @@ class ChatMessage(BaseModel):
 
 class ChatController:
     def __init__(self):
-        self.router = APIRouter(prefix="/chat")
+        self.router = APIRouter(prefix="/")
 
         self.router.add_api_route("/message", self.send_message, methods=["POST"])
         self.router.add_api_route("/history", self.get_user_history, methods=["GET"])
