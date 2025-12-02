@@ -77,7 +77,7 @@ class ChatController:
 
             return {
                     "status": "success",
-                    "conversation_id": data.conversation_id,
+                    "conversation_id": new_conversation.id,
                     "response": response,
                     "role": "assistant",
                     "timestamp": datetime.now(timezone.utc)
