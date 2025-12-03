@@ -23,15 +23,13 @@ from ..repositories import(
 from ..database import Database
 from ..loggin import logger
 
-from .llm_service import LLMService
-
 database = Database()
 
 class ChatService:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, llm_service):
         self.db = db
+        self.llm_service = llm_service
         self._init_repositories()
-        self.llm_service = LLMService()
 
     def _init_repositories(self) -> None:
         self.conversation_repo = ConversationRepository(self.db)
@@ -134,22 +132,21 @@ class ChatService:
             return []
 
     def generate_response(self, conversation_id: str, user_message: str) -> str:
-        """Gera resposta do AI usando histórico da conversa"""
+        """Gera resposta usando o serviço LLM com memória persistente por thread_id"""
+
         try:
-            recent_messages = self.get_conversation_messages(conversation_id, limit=10)
-            
-            conversation_context = self._build_conversation_context(recent_messages)
-            
+            thread_id = conversation_id
+
             response = self.llm_service.query(
                 user_message=user_message,
-                thread_id=conversation_context
+                thread_id=thread_id
             )
-            
+
             logger.info(f"Resposta gerada para conversa {conversation_id}")
             return response
-            
+
         except Exception as e:
-            logger.error(f"Erro ao gerar resposta: {str(e)}")
+            logger.error(f"Erro ao gerar resposta: {e}")
             return "Desculpe, não consegui processar sua mensagem no momento. Tente novamente."
 
     

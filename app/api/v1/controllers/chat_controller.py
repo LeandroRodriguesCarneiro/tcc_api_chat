@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Depends, Query, Body
+from fastapi import APIRouter, HTTPException, Depends, Query, Body, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -19,10 +19,8 @@ database = Database.get_instance()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
-class ChatMessage(BaseModel):
-    role: str
-    content: str
-    timestamp: Optional[datetime] = None
+def get_llm_service(request: Request):
+    return request.app.state.llm_service
 
 class ChatController:
     def __init__(self):
@@ -46,12 +44,14 @@ class ChatController:
         self,
         data: ChatStartRequest = Body(...),
         token: str = Depends(oauth2_scheme),
-        db: Session = Depends(Database.get_db)
+        db: Session = Depends(Database.get_db),
+        llm_service = Depends(get_llm_service),
     ):
+        service = ChatService(db, llm_service)
         self.validate_token(token)
-        service = ChatService(db)
 
         try:
+
             if data.conversation_id:
                 conversation = service.get_conversation(data.conversation_id)
                 if not conversation:
@@ -91,10 +91,11 @@ class ChatController:
         self,
         token: str = Depends(oauth2_scheme),
         limit: int = Query(10, ge=1, le=50),
-        db: Session = Depends(Database.get_db)
+        db: Session = Depends(Database.get_db),
+        llm_service = Depends(get_llm_service),
     ):
         self.validate_token(token)
-        service = ChatService(db)
+        service = ChatService(db, llm_service)
 
         try:
             conversations = service.get_user_conversations(token, limit=limit)
@@ -121,10 +122,11 @@ class ChatController:
         conversation_id: str,
         token: str = Depends(oauth2_scheme),
         limit: int = Query(50, ge=1, le=100),
-        db: Session = Depends(Database.get_db)
+        db: Session = Depends(Database.get_db),
+        llm_service = Depends(get_llm_service)
     ):
         self.validate_token(token)
-        service = ChatService(db)
+        service = ChatService(db, llm_service)
 
         try:
             conversation = service.get_conversation(conversation_id)
