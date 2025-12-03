@@ -3,7 +3,6 @@ from .log_model import LogModel
 from .conversation_model import ConversationModel
 from .message_model import MessageModel
 from .user_model import UserModel
-from .langgraph_checkpoints_model import LanggraphCheckpointModel
 
 __all__ = [
     'Base',
@@ -11,5 +10,4 @@ __all__ = [
     'MessageModel',
     'UserModel',
     'LogModel',
-    'LanggraphCheckpointModel'
 ]

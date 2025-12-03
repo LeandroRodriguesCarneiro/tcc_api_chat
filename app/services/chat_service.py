@@ -48,7 +48,7 @@ class ChatService:
             conversation_dto = ConversationDTO(
                 id=str(uuid.uuid4()),
                 user_id=user_id,
-                title="Nova conversa",
+                title="",
                 created_at=datetime.now(timezone.utc),
                 updated_at=datetime.now(timezone.utc)
             )
@@ -88,6 +88,11 @@ class ChatService:
             if not conversation:
                 raise ValueError(f"Conversa {conversation_id} não encontrada")
             
+            is_first_user_message = (
+                role == "user" and 
+                (conversation.title is None or conversation.title == "")
+            )
+
             message_dto = MessageDTO(
                 id=str(uuid.uuid4()),
                 conversation_id=conversation_id,
@@ -99,12 +104,13 @@ class ChatService:
             message_model = self.message_repo.add(message_dto.to_model())
             
             conversation.updated_at = datetime.now(timezone.utc)
+
+            if is_first_user_message:
+                conversation.title = self.llm_service.generate_title(content)
+            
+            conversation.message_count += 1
             self.conversation_repo.update(conversation)
 
-            if role == "user" and not conversation.title:
-                conversation.title = self._generate_conversation_title(content)
-                self.conversation_repo.update(conversation)
-            
             logger.info(f"Mensagem adicionada à conversa {conversation_id}: {role}")
             return message_model
             

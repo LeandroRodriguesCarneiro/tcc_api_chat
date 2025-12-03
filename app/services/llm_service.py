@@ -7,7 +7,7 @@ from langchain_core.messages import SystemMessage
 from ..database import VectorDataBase
 from ..settings import Settings
 from ..loggin import logger
-from ..prompts import RAG_PROMPT
+from ..prompts import RAG_PROMPT, TITLE_PROMPT
 
 class RAGState(MessagesState):
     context: str
@@ -113,6 +113,26 @@ class LLMService:
             )
 
         return "\n".join(parts)
+
+    def generate_title(self, first_message: str) -> str:
+        """Gera um título curto usando o modelo LLM e o TITLE_PROMPT."""
+        try:
+            prompt_messages = TITLE_PROMPT.format_messages(
+                message=first_message
+            )
+
+            response = self.llm.invoke(prompt_messages)
+
+            title = response.content.strip()
+
+            if not title:
+                return "Nova conversa"
+
+            return title[:70]
+
+        except Exception as e:
+            logger.error(f"Erro ao gerar título: {e}")
+            return "Nova conversa"
 
     def query(self, user_message: str, thread_id: str) -> str:
         user_msg_object = HumanMessage(content=user_message)
