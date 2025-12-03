@@ -36,7 +36,7 @@ class ChatController:
 
         security = SecurityService()
         try:
-            security.validate_access_token(access_token)
+            return security.validate_access_token(access_token)
         except Exception:
             raise HTTPException(status_code=401, detail="Token inválido ou expirado")
 
@@ -48,12 +48,11 @@ class ChatController:
         llm_service = Depends(get_llm_service),
     ):
         service = ChatService(db, llm_service)
-        self.validate_token(token)
+        user = self.validate_token(token)
 
         try:
-
             if data.conversation_id:
-                conversation = service.get_conversation(data.conversation_id)
+                conversation = service.get_conversation_token(data.conversation_id, token)
                 if not conversation:
                     raise HTTPException(status_code=404, detail="Conversa não encontrada")
 
@@ -129,7 +128,7 @@ class ChatController:
         service = ChatService(db, llm_service)
 
         try:
-            conversation = service.get_conversation(conversation_id)
+            conversation = service.get_conversation_token(conversation_id, token)
             if not conversation:
                 raise HTTPException(status_code=404, detail="Conversa não encontrada")
 

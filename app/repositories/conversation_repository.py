@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import select, and_
 from ..models import ConversationModel
 from .repository import Repository
 
@@ -24,6 +24,17 @@ class ConversationRepository(Repository):
         )
         return result.scalar_one_or_none()
 
+    def get_by_id_user_id(self, id:str, user_id:int) -> ConversationModel | None:
+        result = self.session.execute(
+            select(ConversationModel).where(
+                and_(
+                    ConversationModel.id == id,
+                    ConversationModel.user_id == user_id
+                )
+            )
+        )
+        return result
+    
     def get_all(self) -> list[ConversationModel]:
         result = self.session.execute(select(ConversationModel))
         return result.scalars().all()

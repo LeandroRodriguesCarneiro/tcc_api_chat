@@ -70,6 +70,16 @@ class ChatService:
         except Exception as e:
             logger.error(f"Erro ao buscar conversa {conversation_id}: {str(e)}")
             return None
+        
+    def get_conversation_token(self, conversation_id: str, access_token) -> Optional[ConversationModel]:
+        """Recupera uma conversa pelo ID"""
+        try:
+            user_id = self._extract_user_id_from_token(access_token)
+            conversation = self.conversation_repo.get_by_id_user_id(conversation_id, user_id)
+            return conversation
+        except Exception as e:
+            logger.error(f"Erro ao buscar conversa {conversation_id}: {str(e)}")
+            return None
 
     def get_user_conversations(self, access_token: str, limit: int = 10) -> List[ConversationModel]:
         """Lista conversas do usuário ordenadas por data mais recente"""

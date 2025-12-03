@@ -51,8 +51,7 @@ services:
       - test_net
 
   api_chat:
-    # image: leandrorodriguescarneiro/tcc_api_chat:latest
-    build: .
+    image: leandrorodriguescarneiro/tcc_api_chat:latest
     container_name: api_chat
     ports:
       - "8003:8000"
