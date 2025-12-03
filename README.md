@@ -1,4 +1,4 @@
-# tcc_api_chat
+# API do Chatbot - TCC
 
 A API responsável por receber perguntas dos usuários, consultar o banco vetorial (ChromaDB) e retornar respostas contextualizadas utilizando a LLM. Diferente das APIs de ingestão e autenticação, esta API não processa documentos, não realiza ingestão e não gerencia pipelines Kafka. Seu foco é exclusivamente fornecer uma interface rápida, segura e escalável para interação com o chatbot do projeto.
 
