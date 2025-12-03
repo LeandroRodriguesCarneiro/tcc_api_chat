@@ -1,4 +1,3 @@
-# app/main.py
 from fastapi import FastAPI, Depends, Request
 from starlette.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -25,10 +24,8 @@ attach_db_handler(Database.get_instance().get_session)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    db_uri = (
-        f"postgresql://{Settings.DB_USER}:{Settings.DB_PSW}@"
-        f"{Settings.DB_HOST}:{Settings.DB_PORT}/{Settings.DB_DATABASE}?sslmode=disable"
-    )
+
+    db_uri = Database.database_url+'?sslmode=disable'
 
     with PostgresStore.from_conn_string(db_uri) as store, \
          PostgresSaver.from_conn_string(db_uri) as saver:
@@ -41,7 +38,6 @@ async def lifespan(app: FastAPI):
         app.state.llm_service = llm_service
 
         yield
-
 
 app = FastAPI(
     title="API do chatbot",
