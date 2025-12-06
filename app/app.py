@@ -28,8 +28,6 @@ async def lifespan(app: FastAPI):
     db = Database.get_instance()
     db_uri = db.database_url+'?sslmode=disable'
 
-    logger.info(db_uri)
-
     with PostgresStore.from_conn_string(db_uri) as store, \
          PostgresSaver.from_conn_string(db_uri) as saver:
 
