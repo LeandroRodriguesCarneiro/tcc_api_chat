@@ -11,7 +11,8 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/* && \
     pip install --no-cache-dir -r requirements.txt
 
-RUN python - <<EOF
+RUN pip install sentence-transformers
+RUN python3 - <<EOF
 from sentence_transformers import SentenceTransformer
 SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 EOF

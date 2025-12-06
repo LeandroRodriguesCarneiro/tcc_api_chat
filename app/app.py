@@ -25,7 +25,10 @@ attach_db_handler(Database.get_instance().get_session)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
 
-    db_uri = Database.database_url+'?sslmode=disable'
+    db = Database.get_instance()
+    db_uri = db.database_url+'?sslmode=disable'
+
+    logger.info(db_uri)
 
     with PostgresStore.from_conn_string(db_uri) as store, \
          PostgresSaver.from_conn_string(db_uri) as saver:
